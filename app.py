@@ -12,6 +12,18 @@ BUY_URL = "https://your-buy-link"
 CTA_TITLE = "Get the indicator"
 CTA_TEXT = "Automated setups and pending orders on TradingView."
 CTA_BUTTON = "Get access"
+TAGLINE = "Know your entry, stop and target before the order is even placed."
+INTRO = ("A liquidity-sweep and break-of-structure model that turns every setup into a fixed-risk pending order. "
+         "Below is the full backtest: every drawdown, every losing streak and every FTMO attempt, floating risk included. "
+         "No cherry-picking.")
+RISK_SCENARIOS = (0.25, 0.5, 1.0)   # risk % per trade shown in the "What the R means" table
+# FAQ: edit freely (question, answer)
+FAQ = [
+    ("Do I need to watch the charts?", "No. Entry, stop-loss and take-profit are fixed limit orders, and the indicator sends alerts for a new setup, a fill, take-profit and stop-loss."),
+    ("Is it only for FTMO?", "No. Results are measured in R (the amount you risk per trade), so you choose the risk that suits your account, prop firm or personal."),
+    ("Does a good backtest guarantee a passed challenge?", "No. The simulator replays history; live spread, slippage and market conditions will differ. Treat it as evidence of behaviour, not a promise."),
+    ("What do I get after purchase?", "Access to the TradingView indicator. (Edit: add what is included, price, refund and support details here.)"),
+]
 LOW_SAMPLE_TRADES = 10  # pairs with fewer trades get a "Low sample" tag
 # ----------------------------------------------------------------------------
 
@@ -58,6 +70,19 @@ CSS = """
 .pd ul.pts{margin:12px 0 0;padding-left:20px;color:#C9D1DB;font-size:15px;line-height:1.65}
 .pd ul.pts li{margin-bottom:8px}
 .pd ul.pts b{color:#E6EDF3}
+.pd .proof{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.pd .proof .card{background:linear-gradient(180deg,#18212B,#161B22);text-align:left}
+.pd .proof .big{font-size:34px;color:#2DD4BF}
+.pd .eyebrow{display:inline-block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#2DD4BF;border:1px solid #1F5F58;background:rgba(45,212,191,.08);padding:4px 12px;border-radius:999px;margin:0 0 12px}
+.pd .wl{display:flex;align-items:center;gap:12px;margin:10px 0;font-size:14px;color:#C9D1DB}
+.pd .wl .n{width:90px;flex:none}
+.pd .wl .b{height:26px;border-radius:6px;display:flex;align-items:center;padding-left:10px;font-weight:600;color:#0E1116;font-size:13px}
+.pd details{border-bottom:1px solid #232B36;padding:14px 0}
+.pd details summary{cursor:pointer;font-weight:600;font-size:15px;color:#E6EDF3}
+.pd details p{margin:10px 0 0;font-size:14px;line-height:1.6;color:#C9D1DB}
+.sticky{position:fixed;left:0;right:0;bottom:0;z-index:999;background:rgba(14,17,22,.94);backdrop-filter:blur(8px);border-top:1px solid #232B36;display:flex;gap:12px;justify-content:space-between;align-items:center;padding:10px 20px;font-family:Inter,system-ui,sans-serif;color:#E6EDF3;font-size:14px}
+.sticky a{background:#2DD4BF;color:#0E1116!important;font-weight:600;text-decoration:none!important;padding:10px 18px;border-radius:10px;white-space:nowrap}
+.block-container{padding-bottom:90px!important}
 .pd .foot{font-size:12px;line-height:1.6;color:#9AA4B2;margin:0}
 @media (max-width:640px){.pd .title{font-size:26px}.pd .big{font-size:24px}}
 """
@@ -259,6 +284,20 @@ def ftmo_bars(c):
     return out
 
 
+def risk_card():
+    avg_yr = k["net_r"] / n_years
+    worst_yr = min(yrs.values()) if yrs else None
+    fdd_v = k.get("max_float_dd_r", k.get("max_dd_r"))
+    body = ""
+    for rk in RISK_SCENARIOS:
+        body += (f"<tr><td><b>{rk:g}%</b></td><td class='pos'>{avg_yr * rk:+.0f}%</td>"
+                 f"<td>{worst_yr * rk:+.0f}%</td><td class='neg'>{-abs(fdd_v) * rk:.1f}%</td></tr>")
+    return ("<div class='card'><div class='h2'>What the R means for your account</div>"
+            "<div class='sub'>Same backtest, translated to account % at different risk per trade. Simple, non-compounded, hypothetical.</div>"
+            "<div style='overflow-x:auto'><table class='tbl'><tr><th>Risk / trade</th><th>Avg year</th><th>Worst year</th><th>Max DD</th></tr>"
+            f"{body}</table></div></div>")
+
+
 # ---------- page ------------------------------------------------------------
 sample_pill = "<span class='warn'>Sample numbers only</span>" if m.get("sample") else ""
 period = f"Test period: {esc(m['period_from'])} to {esc(m['period_to'])} · Updated: {esc(m['generated'])}"
@@ -280,14 +319,38 @@ p90 = k.get("p90_hold_days")
 fdd = k.get("max_float_dd_r", k.get("max_dd_r"))
 fdd_note = "worst floating drawdown" if "max_float_dd_r" in k else "closed trades"
 
+# derived proof stats
+yrs = S.get("yearly") or {}
+mons = [v for row in S["monthly"].values() for v in row if v is not None]
+n_years = max((pd.Timestamp(m["period_to"]) - pd.Timestamp(m["period_from"])).days / 365.25, 0.1)
+yrs_pos, yrs_n = sum(v > 0 for v in yrs.values()), len(yrs)
+mon_pos, mon_n = sum(v > 0 for v in mons), len(mons)
+pr_pos, pr_n = sum((r.get("net_r") or 0) > 0 for r in S["pairs"]), len(S["pairs"])
+avg_win = k.get("avg_win_r")
+avg_loss = k.get("avg_loss_r") or -1.0
+if avg_win is None and k["win_rate"]:
+    wr = k["win_rate"] / 100
+    avg_win = (k["expectancy_r"] + (1 - wr)) / wr   # approx. (fixed 1R stop)
+
 # header
-p.append("<div style='display:flex;flex-wrap:wrap;gap:12px;justify-content:space-between;align-items:flex-end'><div>"
-         "<div class='lbl' style='margin:0 0 6px'>Public backtest summary</div>"
+p.append("<div style='display:flex;flex-wrap:wrap;gap:16px;justify-content:space-between;align-items:flex-end'><div style='max-width:780px'>"
+         f"<div class='eyebrow'>{n_years:.0f} years of data · {pr_n} FX pairs · {k['trades']:,} trades</div>"
          f"<div class='title'>{esc(PRODUCT_NAME)}</div>"
-         "<div class='h2' style='margin:10px 0 0;font-size:22px'>See exactly how it behaves before you risk a dollar.</div>"
-         "<div class='hero'>Every trade, every drawdown and every FTMO challenge attempt, replayed from real Pine logs, "
-         "with floating risk included. No cherry-picking.</div>"
-         f"<div class='sub' style='margin:10px 0 0'>{period}</div></div>{sample_pill}</div>")
+         f"<div class='h2' style='margin:10px 0 0;font-size:24px'>{esc(TAGLINE)}</div>"
+         f"<div class='hero'>{esc(INTRO)}</div>"
+         f"<div class='sub' style='margin:10px 0 0'>{period}</div></div>"
+         f"<div>{sample_pill}<a class='btn' href='{esc(BUY_URL)}' target='_blank' rel='noopener'>{esc(CTA_BUTTON)}</a></div></div>")
+
+# proof strip
+def proof(big, label, note=""):
+    return f"<div class='card'><div class='big'>{big}</div><div style='font-weight:600;margin-top:4px'>{label}</div><div class='note'>{note}</div></div>"
+
+pf = proof(f"{yrs_pos}/{yrs_n}", "calendar years profitable", f"{m['period_from'][:4]} to {m['period_to'][:4]}, partial years included")
+pf += proof(f"{mon_pos / mon_n * 100:.0f}%", "of months finished positive", f"{mon_pos} of {mon_n} months")
+pf += proof(f"{pr_pos}/{pr_n}", "pairs profitable", "no single pair carries the result")
+if f05_rate is not None:
+    pf += proof(f"{f05_rate:g}%", "FTMO simulation pass rate", "at 0.5% risk per trade, every start date")
+p.append(f"<div class='proof'>{pf}</div>")
 
 # KPI cards
 cards = (kpi_card("Trades", f"{k['trades']:,}", note=f"{k['pairs']} pairs" if k.get("pairs") else "")
@@ -311,12 +374,25 @@ p.append("<div class='card'><div class='h2'>Monthly returns</div>"
          "<div class='sub'>Net R per month. Teal is positive, orange is negative.</div>"
          "<div style='overflow-x:auto'>" + heatmap(S["monthly"], S["yearly"]) + "</div></div>")
 
+# reality check: win/loss shape
+if avg_win:
+    scale = 260 / max(avg_win, abs(avg_loss))
+    lose_pct = 100 - k["win_rate"]
+    p.append("<div class='grid' style='grid-template-columns:repeat(auto-fit,minmax(320px,1fr))'>"
+             "<div class='card'><div class='h2'>The honest part: you will lose most trades</div>"
+             f"<div class='sub'>About {lose_pct:.0f} in 100 trades hit the stop. The edge comes from winners that pay several times the risk.</div>"
+             f"<div class='wl'><span class='n'>Avg loser</span><span class='b' style='width:{abs(avg_loss) * scale:.0f}px;background:#F97316'>{avg_loss:.1f} R</span></div>"
+             f"<div class='wl'><span class='n'>Avg winner</span><span class='b' style='width:{avg_win * scale:.0f}px;background:#2DD4BF'>+{avg_win:.1f} R</span></div>"
+             f"<div class='note'>Longest losing run in the test: {k['max_consec_loss']} trades. Worst month: {min(mons):+.1f} R. "
+             "Know this before you start; it is how the model is built.</div></div>"
+             + risk_card() + "</div>")
+
 # IS/OOS + prop-firm check
 ftmo_html = ""
 if S.get("ftmo") or S.get("ftmo_check"):
     rules = esc(m.get("ftmo_rules", "Standard challenge rules"))
     ftmo_html = ("<div class='card'><div class='h2'>FTMO challenge simulator</div>"
-                 f"<div class='sub'>Every possible start date, replayed through your real rules. {rules}. Floating equity counted.</div>"
+                 f"<div class='sub'>Every possible start date, replayed through your real rules. {rules}. Floating equity counted. Simulated on historical data, not a guarantee.</div>"
                  + (ftmo_bars(S["ftmo_check"]) if S.get("ftmo_check") else "")
                  + (f"<div style='overflow-x:auto'>{ftmo_table(S['ftmo'])}</div>" if S.get("ftmo") else "")
                  + "</div>")
@@ -360,12 +436,18 @@ p.append("<div class='card' style='display:flex;flex-wrap:wrap;gap:16px;justify-
          f"<div><div class='h2'>{esc(CTA_TITLE)}</div><div class='sub' style='margin:0'>{esc(CTA_TEXT)}</div></div>"
          f"<a class='btn' href='{esc(BUY_URL)}' target='_blank' rel='noopener'>{esc(CTA_BUTTON)}</a></div>")
 
+# FAQ
+items = "".join(f"<details><summary>{esc(q)}</summary><p>{esc(a)}</p></details>" for q, a in FAQ)
+p.append(f"<div class='card'><div class='h2'>Questions</div>{items}</div>")
+
 # disclaimer
 p.append("<div class='foot'>Educational purpose only, not financial advice. Hypothetical backtest results; past results "
          "do not guarantee future results. Spread, commission and slippage may differ in live trading. Losses happen and "
          "trading carries risk. This page shows summary statistics only; individual trades and exact indicator settings are "
          "not published. Not affiliated with FTMO or any other prop firm.</div>")
 p.append("</div>")
+p.append(f"<div class='sticky'><span><b>{esc(PRODUCT_NAME)}</b> · {esc(CTA_TEXT)}</span>"
+         f"<a href='{esc(BUY_URL)}' target='_blank' rel='noopener'>{esc(CTA_BUTTON)}</a></div>")
 
 # One single-line HTML string so Streamlit's markdown parser keeps it as a raw HTML block.
 st.markdown(f"<style>{' '.join(CSS.split())}</style>" + "".join(p), unsafe_allow_html=True)
