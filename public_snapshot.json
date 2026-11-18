@@ -1,0 +1,163 @@
+{
+ "meta": {
+  "sample": false,
+  "generated": "2026-11-18",
+  "period_from": "2026-10-23",
+  "period_to": "2026-11-17",
+  "unit": "R (risk multiple)",
+  "ftmo_pass_mode": "touch",
+  "ftmo_rules": "2-step 8% / 5%, 5% daily, 10% max loss",
+  "is_window": "to 2020-12-31",
+  "oos_window": "from 2021-01-01"
+ },
+ "strategy": "Price-action swing model using pending limit orders with fixed stop-loss and take-profit. Works on any time zone and on multiple FX pairs.",
+ "how_it_works": [
+  {
+   "title": "Add the indicator to your chart",
+   "text": "Apply the indicator to a supported FX pair on TradingView."
+  },
+  {
+   "title": "It maps the trade plan",
+   "text": "When its conditions are met, the indicator draws the pending entry level, stop-loss and take-profit on the chart."
+  },
+  {
+   "title": "You place the order",
+   "text": "Place the pending limit order at the marked level with the stop-loss and take-profit shown. Risk per trade is fixed."
+  },
+  {
+   "title": "The trade runs to its target or stop",
+   "text": "Every trade ends at the fixed take-profit or the fixed stop-loss. Results are measured in R, where 1R is the amount risked."
+  },
+  {
+   "title": "Track the results",
+   "text": "This dashboard summarises the full backtest, including the losing periods."
+  }
+ ],
+ "kpi": {
+  "trades": 11,
+  "net_r": 3.9,
+  "win_rate": 27.3,
+  "profit_factor": 1.48,
+  "expectancy_r": 0.352,
+  "avg_hold_days": 2.9,
+  "median_hold_days": 0.8,
+  "p90_hold_days": 7.2,
+  "max_dd_r": -6.1,
+  "max_consec_loss": 6,
+  "pairs": 7
+ },
+ "equity": {
+  "x": [
+   "2026-10-25",
+   "2026-11-01",
+   "2026-11-08",
+   "2026-11-15",
+   "2026-11-22"
+  ],
+  "y": [
+   -1.0,
+   -0.4,
+   -2.4,
+   0.2,
+   3.9
+  ]
+ },
+ "monthly": {
+  "2026": [
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   null,
+   -0.4,
+   4.3,
+   null
+  ]
+ },
+ "yearly": {
+  "2026": 3.9
+ },
+ "ftmo": [
+  {
+   "Risk per trade": "0.5%",
+   "Phase 1 passes": 0,
+   "Challenges passed": 0,
+   "Violated (max loss)": 0,
+   "Violated (daily loss)": 0,
+   "Success rate": null,
+   "Avg total days to full pass": null
+  },
+  {
+   "Risk per trade": "1%",
+   "Phase 1 passes": 0,
+   "Challenges passed": 0,
+   "Violated (max loss)": 0,
+   "Violated (daily loss)": 0,
+   "Success rate": null,
+   "Avg total days to full pass": null
+  }
+ ],
+ "is_oos": {
+  "IS": {},
+  "OOS": {
+   "trades": 11,
+   "net_r": 3.9,
+   "win_rate": 27.3,
+   "profit_factor": 1.48,
+   "expectancy_r": 0.352,
+   "avg_hold_days": 2.9,
+   "median_hold_days": 0.8,
+   "p90_hold_days": 7.2,
+   "max_dd_r": -6.1,
+   "max_consec_loss": 6
+  }
+ },
+ "pairs": [
+  {
+   "pair": "NZDJPY",
+   "trades": 4,
+   "net_r": 5.2,
+   "win_rate": 50.0
+  },
+  {
+   "pair": "USDJPY",
+   "trades": 2,
+   "net_r": 3.7,
+   "win_rate": 50.0
+  },
+  {
+   "pair": "CADCHF",
+   "trades": 1,
+   "net_r": -1.0,
+   "win_rate": 0.0
+  },
+  {
+   "pair": "EURUSD",
+   "trades": 1,
+   "net_r": -1.0,
+   "win_rate": 0.0
+  },
+  {
+   "pair": "GBPCHF",
+   "trades": 1,
+   "net_r": -1.0,
+   "win_rate": 0.0
+  },
+  {
+   "pair": "GBPUSD",
+   "trades": 1,
+   "net_r": -1.0,
+   "win_rate": 0.0
+  },
+  {
+   "pair": "USDCHF",
+   "trades": 1,
+   "net_r": -1.0,
+   "win_rate": 0.0
+  }
+ ]
+}
