@@ -289,12 +289,6 @@ p.append("<div style='display:flex;flex-wrap:wrap;gap:12px;justify-content:space
          "with floating risk included. No cherry-picking.</div>"
          f"<div class='sub' style='margin:10px 0 0'>{period}</div></div>{sample_pill}</div>")
 
-# top chips: total trades + FTMO success @0.5%
-chips = f"<span class='chip'><b>{k['trades']:,}</b> total trades</span>"
-if f05_rate is not None:
-    chips += f"<span class='chip'><b class='pos'>{f05_rate:g}%</b> FTMO success @ 0.5% risk / trade</span>"
-p.append(f"<div class='chips'>{chips}</div>")
-
 # KPI cards
 cards = (kpi_card("Trades", f"{k['trades']:,}", note=f"{k['pairs']} pairs" if k.get("pairs") else "")
          + kpi_card("Net R", num(k["net_r"], "+,.1f"), sign_cls(k["net_r"]), "closed trades")
